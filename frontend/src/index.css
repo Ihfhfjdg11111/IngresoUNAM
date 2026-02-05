@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary: #0A2540;
+    --secondary: #F2B705;
+    --background: #F5F7FA;
+    --surface: #FFFFFF;
+    --text-primary: #0A2540;
+    --text-secondary: #4A5568;
+    --success: #10B981;
+    --error: #EF4444;
+    --warning: #F59E0B;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #F5F7FA;
+    color: var(--text-primary);
+}
+
+.dark body {
+    background-color: #0f172a;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+@layer base {
+    :root {
+        --background: 210 20% 98%;
+        --foreground: 210 50% 15%;
+        --card: 0 0% 100%;
+        --card-foreground: 210 50% 15%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 210 50% 15%;
+        --primary: 210 80% 15%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 45 95% 50%;
+        --secondary-foreground: 210 50% 15%;
+        --muted: 210 20% 96%;
+        --muted-foreground: 210 20% 40%;
+        --accent: 45 95% 50%;
+        --accent-foreground: 210 50% 15%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 210 20% 90%;
+        --input: 210 20% 90%;
+        --ring: 210 80% 15%;
+        --chart-1: 210 80% 50%;
+        --chart-2: 150 60% 45%;
+        --chart-3: 45 95% 50%;
+        --chart-4: 0 84% 60%;
+        --chart-5: 280 65% 60%;
+        --radius: 0.75rem;
+    }
+    
+    .dark {
+        --background: 222 47% 11%;
+        --foreground: 210 40% 98%;
+        --card: 222 47% 13%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222 47% 11%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 210 40% 98%;
+        --primary-foreground: 222 47% 11%;
+        --secondary: 45 95% 50%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217 33% 17%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 45 95% 50%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62% 30%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217 33% 17%;
+        --input: 217 33% 17%;
+        --ring: 45 95% 50%;
+        --chart-1: 210 80% 50%;
+        --chart-2: 150 60% 45%;
+        --chart-3: 45 95% 50%;
+        --chart-4: 0 62% 30%;
+        --chart-5: 280 65% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F5F7FA;
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E0;
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #A0AEC0;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(242, 183, 5, 0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(242, 183, 5, 0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+.animate-pulse-gold {
+    animation: pulse-gold 2s infinite;
+}
+
+/* Stagger animations */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Button Styles */
+.btn-primary {
+    @apply bg-[#0A2540] text-white hover:bg-[#0A2540]/90 rounded-lg px-6 py-3 font-medium transition-all shadow-sm hover:shadow-md;
+}
+
+.btn-secondary {
+    @apply bg-[#F2B705] text-[#0A2540] hover:bg-[#F2B705]/90 rounded-lg px-6 py-3 font-medium transition-all;
+}
+
+.btn-outline {
+    @apply border-2 border-[#0A2540] text-[#0A2540] hover:bg-[#0A2540]/5 rounded-lg px-6 py-3 font-medium;
+}
+
+/* Card Styles */
+.card-default {
+    @apply bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all p-6;
+}
+
+.card-interactive {
+    @apply cursor-pointer hover:-translate-y-1 transition-transform duration-200;
+}
+
+/* Input Styles */
+.input-default {
+    @apply bg-white border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0A2540]/20 focus:border-[#0A2540] outline-none transition-all;
+}
+
+/* Timer styles */
+.timer-warning {
+    @apply text-[#F59E0B];
+}
+
+.timer-danger {
+    @apply text-[#EF4444] animate-pulse;
+}
+
+/* Progress bar gradient */
+.progress-gradient {
+    background: linear-gradient(90deg, #0A2540 0%, #F2B705 100%);
+}
+
+/* Area colors */
+.area-1 { background-color: #3B82F6; }
+.area-2 { background-color: #10B981; }
+.area-3 { background-color: #F59E0B; }
+.area-4 { background-color: #EF4444; }
+
+/* Question navigation */
+.question-nav-item {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all cursor-pointer;
+}
+
+.question-nav-item.current {
+    @apply bg-[#0A2540] text-white ring-2 ring-[#F2B705];
+}
+
+.question-nav-item.answered {
+    @apply bg-[#10B981] text-white;
+}
+
+.question-nav-item.unanswered {
+    @apply bg-slate-200 text-slate-600 hover:bg-slate-300;
+}
+
+/* Debug wrapper fix */
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+}

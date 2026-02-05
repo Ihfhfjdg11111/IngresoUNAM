@@ -1,0 +1,11 @@
+{
+  "auto_allow_file_access": true,
+  "auto_allow_shell_commands": true,
+  "auto_allow_web_search": false,
+  "auto_allow_code_execution": true,
+  "preferred_editor": "code",
+  "file_access_policy": "permissive",
+  "execution_policy": "permissive",
+  "auto_confirm_destructive_actions": true,
+  "auto_install_dependencies": true
+}
