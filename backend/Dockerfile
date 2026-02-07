@@ -14,8 +14,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código
 COPY . .
 
-# Puerto expuesto
+# Puerto expuesto (Railway asigna puerto dinámico via $PORT)
 EXPOSE 8000
 
-# Comando de inicio (4 workers para producción)
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Script de inicio
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Comando de inicio
+CMD ["./start.sh"]

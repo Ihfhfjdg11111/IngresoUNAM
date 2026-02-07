@@ -64,7 +64,7 @@ const Dashboard = () => {
       const headers = { "Authorization": `Bearer ${token}` };
       
       const [progressRes, simulatorsRes, analyticsRes, subRes, attemptsRes] = await Promise.all([
-        fetch(`${API}/progress`, { headers, credentials: "include" }),
+        fetch(`${API}/analytics/progress`, { headers, credentials: "include" }),
         fetch(`${API}/simulators`, { headers, credentials: "include" }),
         fetch(`${API}/analytics/student/performance`, { headers, credentials: "include" }),
         fetch(`${API}/payments/subscription`, { headers, credentials: "include" }),
@@ -115,10 +115,7 @@ const Dashboard = () => {
     }
   };
 
-  const resumeExistingExam = () => {
-    setShowExamConflictDialog(false);
-    navigate(`/exam/${inProgressAttempt.simulator_id}`);
-  };
+  // Ya no se permite reanudar exámenes - el progreso se guarda automáticamente al salir
 
   if (loading) {
     return (
@@ -524,44 +521,6 @@ const Dashboard = () => {
           </FadeIn>
         </div>
 
-        {/* Feedback Invitation */}
-        <FadeIn delay={0.8}>
-          <motion.div 
-            className="bg-gradient-to-r from-[#0A2540] to-[#0A2540]/90 rounded-2xl p-6 shadow-lg mb-8 overflow-hidden relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F2B705]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F2B705]/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-            
-            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-[#F2B705]/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="w-6 h-6 text-[#F2B705]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white font-[Poppins]">
-                    ¿Tienes sugerencias?
-                  </h3>
-                  <p className="text-white/70 text-sm mt-1">
-                    Ayúdanos a mejorar la plataforma. Tu opinión es importante para nosotros.
-                  </p>
-                </div>
-              </div>
-              <motion.button
-                onClick={() => document.querySelector('[title="Enviar feedback"]')?.click()}
-                className="px-5 py-2.5 bg-[#F2B705] hover:bg-[#F59E0B] text-[#0A2540] font-medium rounded-xl transition-colors flex items-center gap-2 flex-shrink-0"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <MessageSquare className="w-4 h-4" />
-                Enviar feedback
-              </motion.button>
-            </div>
-          </motion.div>
-        </FadeIn>
-
         {/* Recent Attempts */}
         {progress?.recent_attempts?.length > 0 && (
           <FadeIn delay={0.7}>
@@ -619,6 +578,44 @@ const Dashboard = () => {
             </motion.div>
           </FadeIn>
         )}
+
+        {/* Feedback Invitation */}
+        <FadeIn delay={0.8}>
+          <motion.div 
+            className="bg-gradient-to-r from-[#0A2540] to-[#0A2540]/90 rounded-2xl p-6 shadow-lg mb-8 overflow-hidden relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F2B705]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F2B705]/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[#F2B705]/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-6 h-6 text-[#F2B705]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-[Poppins]">
+                    ¿Tienes sugerencias?
+                  </h3>
+                  <p className="text-white/70 text-sm mt-1">
+                    Ayúdanos a mejorar la plataforma. Tu opinión es importante para nosotros.
+                  </p>
+                </div>
+              </div>
+              <motion.button
+                onClick={() => document.querySelector('[title="Enviar feedback"]')?.click()}
+                className="px-5 py-2.5 bg-[#F2B705] hover:bg-[#F59E0B] text-[#0A2540] font-medium rounded-xl transition-colors flex items-center gap-2 flex-shrink-0"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Enviar feedback
+              </motion.button>
+            </div>
+          </motion.div>
+        </FadeIn>
       </main>
 
       {/* Question Count Dialog */}
@@ -701,25 +698,18 @@ const Dashboard = () => {
                   Ya tienes un examen iniciado: <strong>{inProgressAttempt?.simulator_name || "Simulacro"}</strong>
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
-                  Puedes reanudarlo o iniciar uno nuevo (perderás el progreso del anterior).
+                  El progreso de tu examen anterior se guardará en tu historial. Puedes iniciar uno nuevo ahora.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 flex-col gap-2 w-full">
             <AlertDialogAction
-              onClick={resumeExistingExam}
-              className="w-full bg-[#10B981] text-white hover:bg-[#10B981]/90 rounded-xl font-semibold py-3"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Reanudar examen anterior
-            </AlertDialogAction>
-            <AlertDialogAction
               onClick={abandonAndStartNew}
               className="w-full bg-[#F2B705] text-[#0A2540] hover:bg-[#F2B705]/90 rounded-xl font-semibold py-3"
             >
               <RotateCcw className="w-5 h-5 mr-2" />
-              Iniciar nuevo (perder progreso)
+              Iniciar nuevo examen
             </AlertDialogAction>
             <AlertDialogCancel 
               onClick={() => setPendingExamStart(null)}

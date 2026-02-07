@@ -657,6 +657,23 @@ const SubjectPractice = () => {
                   )}
                 </div>
 
+                {/* Reading Text */}
+                {question.reading_text && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="w-4 h-4 text-[#0A2540] dark:text-[#F2B705]" />
+                      <span className="text-xs font-medium text-[#0A2540] dark:text-[#F2B705]">Texto de lectura</span>
+                    </div>
+                    <p className="text-sm text-[#4A5568] dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                      {question.reading_text}
+                    </p>
+                  </motion.div>
+                )}
+
                 {/* Options */}
                 <div className="space-y-3">
                   {question.options.map((option, index) => {

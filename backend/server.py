@@ -91,6 +91,15 @@ def _register_additional_routes(app: FastAPI):
     from utils.security import sanitize_string
     from services.auth_service import AuthService
     
+    @app.get("/api/health")
+    async def health_check():
+        """Health check endpoint for Railway"""
+        return {
+            "status": "healthy",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "version": "1.0.0"
+        }
+    
     @app.get("/api/exam-config")
     async def get_exam_config():
         """Get exam configuration"""
@@ -112,7 +121,22 @@ def _register_additional_routes(app: FastAPI):
         data = await request.json()
         
         subject_id = data.get("subject_id")
-        requested_count = min(max(data.get("question_count", 10), 5), 30)
+        requested_count = data.get("question_count", 10)
+        
+        # Validate question_count range
+        if requested_count < 5 or requested_count > 30:
+            raise HTTPException(
+                status_code=422,
+                detail=f"question_count must be between 5 and 30, got {requested_count}"
+            )
+        
+        # Check if user has access to this subject (premium feature)
+        subject_access = await SubscriptionService.check_subject_access(user, subject_id)
+        if not subject_access:
+            raise HTTPException(
+                status_code=403,
+                detail="Esta materia está disponible solo para usuarios Premium. Suscríbete para acceder a todas las materias."
+            )
         
         # Check practice access limits for free users
         access_check = await SubscriptionService.check_practice_access(user, requested_count)
@@ -124,7 +148,7 @@ def _register_additional_routes(app: FastAPI):
             )
         
         # Use the allowed question count (may be limited for free users)
-        question_count = access_check["max_questions"]
+        question_count = min(requested_count, access_check["max_questions"])
         
         subject = await db.subjects.find_one({"subject_id": subject_id}, {"_id": 0})
         if not subject:
@@ -135,6 +159,13 @@ def _register_additional_routes(app: FastAPI):
             {"$sample": {"size": question_count}},
             {"$project": {"_id": 0}}
         ]).to_list(question_count)
+        
+        # Get reading texts for questions that have them
+        reading_texts_cache = {}
+        for q in questions:
+            if q.get("reading_text_id") and q["reading_text_id"] not in reading_texts_cache:
+                rt = await db.reading_texts.find_one({"reading_text_id": q["reading_text_id"]}, {"_id": 0})
+                reading_texts_cache[q["reading_text_id"]] = rt["content"] if rt else None
         
         practice_id = AuthService.generate_id("practice_")
         now = datetime.now(timezone.utc).isoformat()
@@ -159,7 +190,9 @@ def _register_additional_routes(app: FastAPI):
                 "text": q["text"],
                 "options": q["options"],
                 "image_url": q.get("image_url"),
-                "option_images": q.get("option_images")
+                "option_images": q.get("option_images"),
+                "reading_text_id": q.get("reading_text_id"),
+                "reading_text": reading_texts_cache.get(q.get("reading_text_id")) if q.get("reading_text_id") else None
             } for q in questions],
             "total_questions": len(questions),
             "is_premium": access_check["is_premium"]

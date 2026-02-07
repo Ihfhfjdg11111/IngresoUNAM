@@ -35,16 +35,30 @@ class SubscriptionService:
                 return {
                     "is_premium": True,
                     "plan_name": subscription.get("plan_name"),
+                    "is_recurring": subscription.get("is_recurring", False),
+                    "stripe_subscription_id": subscription.get("stripe_subscription_id"),
                     "expires_at": subscription["expires_at"]
                 }
             else:
                 # Subscription expired, update status
+                # Para suscripciones recurrentes, mantener activo un período de gracia
+                # Stripe intentará renovar automáticamente
+                if subscription.get("is_recurring") and subscription.get("payment_status") != "past_due":
+                    return {
+                        "is_premium": True,
+                        "plan_name": subscription.get("plan_name"),
+                        "is_recurring": True,
+                        "stripe_subscription_id": subscription.get("stripe_subscription_id"),
+                        "expires_at": subscription["expires_at"],
+                        "grace_period": True
+                    }
+                
                 await db.subscriptions.update_one(
                     {"subscription_id": subscription["subscription_id"]},
                     {"$set": {"status": "expired"}}
                 )
         
-        return {"is_premium": False, "plan_name": None, "expires_at": None}
+        return {"is_premium": False, "plan_name": None, "is_recurring": False, "expires_at": None}
     
     @staticmethod
     async def get_user_simulator_usage(user_id: str) -> Dict[str, int]:
@@ -130,6 +144,25 @@ class SubscriptionService:
         if total_usage >= FREE_TOTAL_SIMULATORS_LIMIT:
             return False
         
+        return True
+    
+    @staticmethod
+    async def check_subject_access(user: dict, subject_id: str) -> bool:
+        """
+        Check if user can access a specific subject for practice
+        All subjects are available for practice, limits are on question count
+        """
+        # Admin users always have access
+        if user.get("role") == "admin":
+            return True
+        
+        # Check if user has premium subscription
+        subscription = await SubscriptionService.get_user_subscription(user["user_id"])
+        if subscription["is_premium"]:
+            return True
+        
+        # All subjects are available for free users in practice mode
+        # Limits are enforced via check_practice_access (question count)
         return True
     
     @staticmethod

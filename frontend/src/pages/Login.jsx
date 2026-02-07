@@ -21,14 +21,55 @@ const Login = () => {
   });
 
   useEffect(() => {
+    // Nuevo flujo: manejar token desde query params (redirect desde Railway)
+    const token = searchParams.get("token");
+    const userId = searchParams.get("user_id");
+    const email = searchParams.get("email");
+    const name = searchParams.get("name");
+    const role = searchParams.get("role");
+    const picture = searchParams.get("picture");
+    const error = searchParams.get("error");
+
+    if (error) {
+      toast.error(`Error de login: ${error}`);
+      // Limpiar URL
+      window.history.replaceState({}, document.title, "/login");
+      return;
+    }
+
+    if (token && userId) {
+      // Construir objeto de usuario
+      const user = {
+        user_id: userId,
+        email: email,
+        name: name,
+        role: role,
+        picture: picture
+      };
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("isAuthenticated", "true");
+      toast.success("¡Bienvenido!");
+      
+      // Limpiar URL
+      window.history.replaceState({}, document.title, "/login");
+      
+      // Verificar si el usuario ya completó el onboarding
+      const hasPreferences = user?.preferences?.carrera && user?.preferences?.plantel;
+      navigate(hasPreferences ? "/dashboard" : "/onboarding");
+      return;
+    }
+
+    // Legacy: manejar code (flujo antiguo, mantener por compatibilidad)
     const code = searchParams.get("code");
-    if (code) {
-      handleGoogleCallback(code);
+    if (code && !token) {
+      handleGoogleCallbackLegacy(code);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const handleGoogleCallback = async (code) => {
+  const handleGoogleCallbackLegacy = async (code) => {
     setLoading(true);
     try {
       const response = await fetch(`${API}/auth/google/callback`, {
@@ -45,7 +86,9 @@ const Login = () => {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("isAuthenticated", "true");
         toast.success("¡Bienvenido!");
-        navigate("/dashboard");
+        // Verificar si el usuario ya completó el onboarding
+        const hasPreferences = data.user?.preferences?.carrera && data.user?.preferences?.plantel;
+        navigate(hasPreferences ? "/dashboard" : "/onboarding");
       } else {
         toast.error(data.detail || "Error al iniciar sesión con Google");
       }
@@ -74,7 +117,9 @@ const Login = () => {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("isAuthenticated", "true");
         toast.success("¡Bienvenido de vuelta!");
-        navigate("/dashboard");
+        // Verificar si el usuario ya completó el onboarding
+        const hasPreferences = data.user?.preferences?.carrera && data.user?.preferences?.plantel;
+        navigate(hasPreferences ? "/dashboard" : "/onboarding");
       } else {
         toast.error(data.detail || "Error al iniciar sesión");
       }
@@ -87,7 +132,12 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      const response = await fetch(`${API}/auth/google/url`);
+      // Detectar URL actual del frontend para callback
+      const frontendUrl = window.location.origin;
+      
+      const response = await fetch(
+        `${API}/auth/google/url?frontend_url=${encodeURIComponent(frontendUrl)}`
+      );
       const data = await response.json();
       
       if (response.ok && data.auth_url) {
@@ -107,7 +157,7 @@ const Login = () => {
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div 
-            className="absolute top-20 left-10 w-72 h-72 bg-[#F2B705]/10 rounded-full blur-3xl"
+            className="absolute top-20 left-10 w-72 h-72 bg-[#D4A017]/10 rounded-full blur-3xl"
             animate={{ scale: [1, 1.2, 1], x: [0, 20, 0] }}
             transition={{ duration: 8, repeat: Infinity }}
           />
@@ -125,7 +175,7 @@ const Login = () => {
                 className="w-12 h-12 bg-[#0A2540] rounded-xl flex items-center justify-center shadow-lg"
                 whileHover={{ rotate: 5, scale: 1.05 }}
               >
-                <BookOpen className="w-7 h-7 text-[#F2B705]" />
+                <BookOpen className="w-7 h-7 text-[#D4A017]" />
               </motion.div>
               <div>
                 <span className="text-2xl font-bold text-[#0A2540] dark:text-white font-[Poppins] block">IngresoUNAM</span>
@@ -183,7 +233,7 @@ const Login = () => {
                     placeholder="tu@email.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="pl-10 py-6 border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-xl focus:border-[#F2B705] focus:ring-[#F2B705]/20 transition-all"
+                    className="pl-10 py-6 border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-xl focus:border-[#D4A017] focus:ring-[#D4A017]/20 transition-all"
                     required
                   />
                 </motion.div>
@@ -199,7 +249,7 @@ const Login = () => {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="pl-10 pr-10 py-6 border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-xl focus:border-[#F2B705] focus:ring-[#F2B705]/20 transition-all"
+                    className="pl-10 pr-10 py-6 border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-xl focus:border-[#D4A017] focus:ring-[#D4A017]/20 transition-all"
                     required
                   />
                   <motion.button
@@ -242,7 +292,7 @@ const Login = () => {
           <FadeIn delay={0.4}>
             <p className="text-center mt-8 text-slate-500 dark:text-slate-400">
               ¿No tienes cuenta?{" "}
-              <Link to="/register" className="text-[#F2B705] hover:text-[#F2B705]/80 font-semibold transition-colors">
+              <Link to="/register" className="text-[#D4A017] hover:text-[#D4A017]/80 font-semibold transition-colors">
                 Regístrate gratis
               </Link>
             </p>
@@ -260,7 +310,7 @@ const Login = () => {
         {/* Animated background */}
         <div className="absolute inset-0">
           <motion.div 
-            className="absolute top-20 left-20 w-64 h-64 bg-[#F2B705]/20 rounded-full blur-3xl"
+            className="absolute top-20 left-20 w-64 h-64 bg-[#D4A017]/20 rounded-full blur-3xl"
             animate={{ 
               scale: [1, 1.3, 1],
               x: [0, 30, 0],
@@ -269,7 +319,7 @@ const Login = () => {
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div 
-            className="absolute bottom-20 right-20 w-96 h-96 bg-[#F2B705]/10 rounded-full blur-3xl"
+            className="absolute bottom-20 right-20 w-96 h-96 bg-[#D4A017]/10 rounded-full blur-3xl"
             animate={{ 
               scale: [1, 1.2, 1],
               x: [0, -30, 0],
@@ -292,7 +342,7 @@ const Login = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
           >
             <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm mb-6 backdrop-blur-sm border border-white/10">
-              <Sparkles className="w-4 h-4 text-[#F2B705]" />
+              <Sparkles className="w-4 h-4 text-[#D4A017]" />
               Prepárate para el éxito
             </div>
           </motion.div>
@@ -304,7 +354,7 @@ const Login = () => {
             transition={{ delay: 0.4, duration: 0.6 }}
           >
             Tu futuro en la{" "}
-            <span className="text-[#F2B705]">UNAM</span>
+            <span className="text-[#D4A017]">UNAM</span>
             <br />
             comienza aquí
           </motion.h2>
@@ -328,7 +378,7 @@ const Login = () => {
               className="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10"
               whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
             >
-              <p className="text-4xl font-bold text-[#F2B705]">
+              <p className="text-4xl font-bold text-[#D4A017]">
                 <AnimatedCounter value={120} duration={2} />
               </p>
               <p className="text-white/70 text-sm mt-1">Preguntas por examen</p>
@@ -337,7 +387,7 @@ const Login = () => {
               className="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10"
               whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
             >
-              <p className="text-4xl font-bold text-[#F2B705]">
+              <p className="text-4xl font-bold text-[#D4A017]">
                 <AnimatedCounter value={180} duration={2} />
               </p>
               <p className="text-white/70 text-sm mt-1">Minutos de práctica</p>

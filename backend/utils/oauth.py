@@ -6,11 +6,30 @@ import os
 import httpx
 from typing import Optional, Dict
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/callback")
+
+# Lista de redirect URIs permitidos (para múltiples dispositivos/orígenes)
+ALLOWED_REDIRECT_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://127.0.0.1:3000",
+    # Railway backend (para callback centralizado)
+    "https://ingresounam-backend-production-71a1.up.railway.app",
+    # ngrok URLs dinámicas (patrón)
+]
+
+# Permitir ngrok dinámico via variable de entorno
+NGROK_URL = os.environ.get("NGROK_URL", "")
+if NGROK_URL:
+    ALLOWED_REDIRECT_ORIGINS.append(NGROK_URL)
+
+# Redirect URI por defecto (Railway backend)
+DEFAULT_REDIRECT_URI = "https://ingresounam-backend-production-71a1.up.railway.app/api/auth/google/callback"
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -22,12 +41,40 @@ class GoogleOAuthError(Exception):
     pass
 
 
-def get_google_auth_url(state: Optional[str] = None) -> str:
+def is_allowed_redirect_uri(redirect_uri: str) -> bool:
+    """
+    Verifica si el redirect_uri está permitido
+    """
+    if not redirect_uri:
+        return False
+    
+    # Parsear la URL
+    parsed = urlparse(redirect_uri)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    
+    # Verificar origen exacto
+    if origin in ALLOWED_REDIRECT_ORIGINS:
+        return True
+    
+    # Permitir cualquier ngrok-free.app
+    if parsed.netloc.endswith(".ngrok-free.app"):
+        return True
+    
+    # Permitir cualquier ngrok.io
+    if parsed.netloc.endswith(".ngrok.io"):
+        return True
+    
+    return False
+
+
+def get_google_auth_url(redirect_uri: Optional[str] = None, state: Optional[str] = None, frontend_url: Optional[str] = None) -> str:
     """
     Generate Google OAuth authorization URL
     
     Args:
-        state: Optional state parameter for security
+        redirect_uri: URL de callback (opcional, usa default si no se proporciona)
+        state: Optional state parameter for security (puede contener frontend_url)
+        frontend_url: URL del frontend para redirigir después del login
         
     Returns:
         Authorization URL to redirect user
@@ -35,35 +82,54 @@ def get_google_auth_url(state: Optional[str] = None) -> str:
     if not GOOGLE_CLIENT_ID:
         raise GoogleOAuthError("GOOGLE_CLIENT_ID not configured")
     
+    # Usar el redirect_uri proporcionado o el default
+    callback_uri = redirect_uri or DEFAULT_REDIRECT_URI
+    
+    # Validar que el redirect_uri esté permitido
+    if not is_allowed_redirect_uri(callback_uri):
+        raise GoogleOAuthError(f"Redirect URI no permitido: {callback_uri}")
+    
+    # Construir state con frontend_url si se proporciona
+    state_value = state or ""
+    if frontend_url:
+        import base64
+        import json
+        state_data = {"f": frontend_url, "s": state_value}
+        state_value = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode().rstrip("=")
+    
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "redirect_uri": callback_uri,
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "consent",
     }
     
-    if state:
-        params["state"] = state
+    if state_value:
+        params["state"] = state_value
     
     from urllib.parse import urlencode
     query_string = urlencode(params)
     return f"{GOOGLE_AUTH_URL}?{query_string}"
 
 
-async def exchange_code_for_tokens(code: str) -> Dict:
+async def exchange_code_for_tokens(code: str, redirect_uri: Optional[str] = None) -> Dict:
     """
     Exchange authorization code for access tokens
     
     Args:
         code: Authorization code from Google callback
+        redirect_uri: URL de callback usado (opcional, usa default si no se proporciona)
         
     Returns:
         Dictionary with access_token, refresh_token, etc.
     """
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         raise GoogleOAuthError("Google OAuth credentials not configured")
+    
+    # Usar el redirect_uri proporcionado o el default
+    callback_uri = redirect_uri or DEFAULT_REDIRECT_URI
     
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -72,7 +138,7 @@ async def exchange_code_for_tokens(code: str) -> Dict:
                 "code": code,
                 "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "redirect_uri": callback_uri,
                 "grant_type": "authorization_code",
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
